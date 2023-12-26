@@ -1,1 +1,94 @@
+from keras.models import load_model  # TensorFlow is required for Keras to work
+import cv2  # Install opencv-python
+import numpy as np
 
+# Disable scientific notation for clarity
+np.set_printoptions(suppress=True)
+
+# Load the model
+model = load_model("keras_Model.h5", compile=False)
+
+# Load the labels
+class_names = open("labels.txt", "r").readlines()
+
+# CAMERA can be 0 or 1 based on default camera of your computer
+camera = cv2.VideoCapture(0)
+
+while True:
+    # Grab the webcamera's image.
+    ret, image = camera.read()
+
+    # Resize the raw image into (224-height,224-width) pixels
+    image = cv2.resize(image, (224, 224), interpolation=cv2.INTER_AREA)
+
+    # Show the image in a window
+    cv2.imshow("Webcam Image", image)
+
+    # Make the image a numpy array and reshape it to the models input shape.
+    image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
+
+    # Normalize the image array
+    image = (image / 127.5) - 1
+
+    # Predicts the model
+    prediction = model.predict(image)
+    index = np.argmax(prediction)
+    class_name = class_names[index]
+    confidence_score = prediction[0][index]
+
+    # Print prediction and confidence score
+    print("Class:", class_name[2:], end="")
+    print("Confidence Score:", str(np.round(confidence_score * 100))[:-2], "%")
+
+    # Listen to the keyboard for presses.
+    keyboard_input = cv2.waitKey(1)
+
+    # 27 is the ASCII for the esc key on your keyboard.
+    if keyboard_input == 27:
+        break
+
+camera.release()
+cv2.destroyAllWindows()
+import cv2
+import requests
+from twilio.rest import Client
+
+# Initialize the Twilio client
+TWILIO_ACCOUNT_SID = 'your_account_sid'
+TWILIO_AUTH_TOKEN = 'your_auth_token'
+TWILIO_PHONE_NUMBER = 'your_twilio_phone_number'
+TO_PHONE_NUMBER = 'destination_phone_number'
+
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+# Function to process the video and detect accidents
+def detect_accidents(video_path):
+    cap = cv2.VideoCapture(video_path)
+    frame_number = 0
+
+    while True:
+        ret, frame = cap.read()
+
+        if not ret:
+            break
+
+        # Perform accident detection (simplified, replace with real algorithm)
+        is_accident = False  # Placeholder for accident detection
+
+        if is_accident:
+            # Send SMS alert using Twilio
+            message = client.messages.create(
+                body="Accident detected at frame {} of the video. Please respond.".format(frame_number),
+                from_=TWILIO_PHONE_NUMBER,
+                to=TO_PHONE_NUMBER
+            )
+
+        frame_number += 1
+
+    cap.release()
+
+# Specify the path to the uploaded video file
+video_file_path = 'path_to_uploaded_video.mp4'
+
+# Call the detect_accidents function with the video file
+detect_accidents(video_file_path)
